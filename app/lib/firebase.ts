@@ -2,10 +2,15 @@ import { initializeApp, getApps, getApp, type FirebaseApp } from "firebase/app";
 import {
   getFirestore,
   collection,
-  addDoc,
+  doc,
+  runTransaction,
   serverTimestamp,
   type Firestore,
 } from "firebase/firestore";
+
+// Applicants notionally ahead of #1, so early queue numbers don't read
+// "#1, #2" while the founding batch fills. Set to 0 for a true raw count.
+const QUEUE_BASE = 46;
 
 // Firebase web config is public by design, gating happens via Firestore
 // security rules, not by hiding these keys. Values can be overridden per
@@ -57,34 +62,54 @@ export interface ApplicationRecord extends ApplicationInput {
 }
 
 /**
- * Persist a founding-batch application to Firestore. Returns the local
- * record (operator id + queue position) used to render the success step.
- * Throws on write failure so the caller can fall back gracefully.
+ * Persist a founding-batch application to Firestore. The queue position is the
+ * real number of applications on record (QUEUE_BASE + existing count + 1), not
+ * a random value, so it's stable and grows by one with each genuine signup.
+ * Returns the local record (operator id + queue position) used to render the
+ * success step. Throws on write failure so the caller can fall back gracefully.
  */
 export async function submitApplication(
   input: ApplicationInput
 ): Promise<ApplicationRecord> {
-  const opId = "HA-" + String(Math.floor(Math.random() * 900) + 100);
-  const queuePos = Math.floor(Math.random() * 40) + 47; // 47–86
-  const record: ApplicationRecord = {
+  const db = getDb();
+  const col = collection(db, WAITLIST_COLLECTION);
+  // Single public counter doc — the only readable thing. Application docs stay
+  // create-only so applicant PII is never exposed. The transaction makes the
+  // position monotonic even under concurrent submissions.
+  const counterRef = doc(db, "meta", "waitlist");
+
+  const { opId, queuePos } = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(counterRef);
+    const current = (snap.exists() ? snap.data().count : 0) || 0;
+    const pos = QUEUE_BASE + current + 1;
+    const id = "HA-" + String(pos).padStart(3, "0");
+
+    const appRef = doc(col); // new auto-id within the create-only collection
+    tx.set(appRef, {
+      name: input.name,
+      email: input.email,
+      age: input.age,
+      building: input.building,
+      boldest: input.boldest,
+      opId: id,
+      queuePos: pos,
+      createdAt: serverTimestamp(),
+      source: "waitlist",
+    });
+    tx.set(
+      counterRef,
+      { count: current + 1, updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+
+    return { opId: id, queuePos: pos };
+  });
+
+  return {
     ...input,
     opId,
     queuePos,
     submitted: true,
     ts: Date.now(),
   };
-
-  await addDoc(collection(getDb(), WAITLIST_COLLECTION), {
-    name: input.name,
-    email: input.email,
-    age: input.age,
-    building: input.building,
-    boldest: input.boldest,
-    opId,
-    queuePos,
-    createdAt: serverTimestamp(),
-    source: "waitlist",
-  });
-
-  return record;
 }

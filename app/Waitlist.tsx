@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import Reveal from "./components/Reveal";
 import Counter from "./components/Counter";
-import Ticker from "./components/Ticker";
 import Marquee from "./components/Marquee";
 import Faq from "./components/Faq";
 import ApplyModal from "./components/ApplyModal";
@@ -133,54 +132,6 @@ export default function Waitlist() {
                 <span>Ages 13–19.</span>
               </Reveal>
             </div>
-
-            {/* console */}
-            <Reveal as="aside" className="console" d={2} aria-hidden="true">
-              <div className="console__head">
-                <span className="kicker">Operational Status</span>
-                <span className="live">
-                  <span className="blip" />
-                  LIVE
-                </span>
-              </div>
-              <div className="radar">
-                <div className="radar__cross" />
-                <div className="radar__sweep" />
-                <span className="radar__pip" style={{ left: "64%", top: "30%" }} />
-                <span className="radar__pip" style={{ left: "38%", top: "58%" }} />
-                <span className="radar__pip" style={{ left: "72%", top: "66%" }} />
-                <span className="radar__pip" style={{ left: "50%", top: "44%" }} />
-              </div>
-              <div className="console__stats">
-                <div className="cstat">
-                  <div className="cstat__n">
-                    <Counter to={6} />
-                  </div>
-                  <div className="cstat__l">Units forming</div>
-                </div>
-                <div className="cstat">
-                  <div className="cstat__n">
-                    <Counter to={100} />
-                    <span className="ig">%</span>
-                  </div>
-                  <div className="cstat__l">By application</div>
-                </div>
-                <div className="cstat">
-                  <div className="cstat__n">
-                    <span className="ig">$</span>
-                    <Counter to={0} />
-                  </div>
-                  <div className="cstat__l">Cost to found</div>
-                </div>
-                <div className="cstat">
-                  <div className="cstat__n">
-                    <Counter to={50} />
-                  </div>
-                  <div className="cstat__l">Founding seats</div>
-                </div>
-              </div>
-              <Ticker />
-            </Reveal>
           </div>
         </section>
 
@@ -454,13 +405,11 @@ export default function Waitlist() {
         <section className="section">
           <div className="wrap mentor">
             <Reveal className="mentor__photo">
-              <div className="ph">
-                <svg className="ph__ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4">
-                  <circle cx="12" cy="8" r="4" />
-                  <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
-                </svg>
-                <span className="ph__t">Photo · Joshua Newall</span>
-              </div>
+              <img
+                className="mentor__img"
+                src="/images/joshua_newall.jpg"
+                alt="Joshua Newall, Founder and Lead Mentor at High Agency"
+              />
               <div className="mentor__badge">
                 <div className="nm">Joshua Newall</div>
                 <div className="rl">Founder &amp; Lead Mentor · High Agency</div>
